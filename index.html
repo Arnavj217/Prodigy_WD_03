@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic Tac Toe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Pacifico&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to right, #ffecd2, #fcb69f);
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .game-container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      text-align: center;
+      max-width: 450px;
+      width: 100%;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-family: 'Fredoka One', sans-serif;
+      color: #333;
+    }
+
+    .mode-selection {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+
+    .mode-selection label {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .mode-selection input[type="radio"] {
+      transform: scale(1.4);
+      margin-right: 8px;
+      accent-color: #ff4e50;
+    }
+
+    .name-inputs {
+      margin-bottom: 20px;
+    }
+
+    .name-inputs input {
+      padding: 10px;
+      margin: 5px;
+      width: 45%;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+
+    .start-btn, .reset-btn {
+      background-color: #ff6b6b;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1em;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px 5px;
+      transition: background 0.3s;
+    }
+
+    .start-btn:hover, .reset-btn:hover {
+      background-color: #e55b5b;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 2.8em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #fcefee;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Fredoka One', sans-serif;
+      color: #ff6b6b;
+      transition: transform 0.2s ease;
+    }
+
+    .cell:hover {
+      transform: scale(1.05);
+      background-color: #ffe8e8;
+    }
+
+    .cell.O {
+      color: #1e90ff;
+    }
+
+    .status {
+      font-size: 1.2em;
+      margin: 10px 0;
+      font-weight: bold;
+      color: #444;
+    }
+
+    .winner {
+      font-family: 'Pacifico', cursive;
+      font-size: 1.6em;
+      color: #0d3b66;
+    }
+
+    #board-section {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <h1>Tic Tac Toe</h1>
+
+    <div class="mode-selection" id="mode-section">
+      <label><input type="radio" name="mode" value="human" checked />Play vs Human</label>
+      <label><input type="radio" name="mode" value="computer" />Play vs Computer</label>
+    </div>
+
+    <div class="name-inputs" id="name-section">
+      <input type="text" id="player1" placeholder="Player 1 Name (X)" />
+      <input type="text" id="player2" placeholder="Player 2 Name (O)" />
+      <br />
+      <button class="start-btn" onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="board-section">
+      <div class="status" id="status">Player X's turn</div>
+      <div class="board" id="board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+      </div>
+      <button class="reset-btn" onclick="resetGame()">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const cells = document.querySelectorAll('.cell');
+    const statusText = document.getElementById('status');
+    const boardSection = document.getElementById('board-section');
+    const nameSection = document.getElementById('name-section');
+    const modeRadios = document.querySelectorAll('input[name="mode"]');
+
+    let player1Name = '';
+    let player2Name = '';
+    let currentPlayer = 'X';
+    let board = Array(9).fill('');
+    let mode = 'human';
+    let isGameActive = false;
+
+    const winConditions = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    modeRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        mode = document.querySelector('input[name="mode"]:checked').value;
+        const p2Input = document.getElementById('player2');
+        p2Input.style.display = mode === 'computer' ? 'none' : 'inline-block';
+      });
+    });
+
+    function startGame() {
+      const p1 = document.getElementById('player1').value.trim();
+      const p2 = mode === 'computer' ? 'Computer' : document.getElementById('player2').value.trim();
+
+      if (!p1 || (!p2 && mode === 'human')) {
+        alert("Please enter player names!");
+        return;
+      }
+
+      player1Name = p1;
+      player2Name = p2;
+      currentPlayer = 'X';
+      board = Array(9).fill('');
+      isGameActive = true;
+
+      statusText.textContent = `${player1Name}'s turn (X)`;
+      statusText.classList.remove('winner');
+      cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('X', 'O');
+        cell.addEventListener('click', handleClick);
+      });
+
+      nameSection.style.display = 'none';
+      boardSection.style.display = 'block';
+    }
+
+    function handleClick(e) {
+      const index = e.target.dataset.index;
+
+      if (board[index] !== '' || !isGameActive) return;
+
+      makeMove(index, currentPlayer);
+
+      const result = checkWinner();
+      if (result) endGame(result);
+      else switchTurn();
+
+      if (mode === 'computer' && currentPlayer === 'O' && isGameActive) {
+        setTimeout(() => {
+          let move = getComputerMove();
+          if (move !== null) {
+            makeMove(move, 'O');
+            const result = checkWinner();
+            if (result) endGame(result);
+            else switchTurn();
+          }
+        }, 500);
+      }
+    }
+
+    function makeMove(index, player) {
+      board[index] = player;
+      const cell = document.querySelector(`.cell[data-index='${index}']`);
+      cell.textContent = player;
+      cell.classList.add(player);
+    }
+
+    function switchTurn() {
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      const playerName = currentPlayer === 'X' ? player1Name : player2Name;
+      statusText.textContent = `${playerName}'s turn (${currentPlayer})`;
+    }
+
+    function checkWinner() {
+      for (const condition of winConditions) {
+        const [a, b, c] = condition;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          return board[a];
+        }
+      }
+      return board.includes('') ? null : 'Draw';
+    }
+
+    function endGame(result) {
+      isGameActive = false;
+      if (result === 'Draw') {
+        statusText.textContent = "It's a tie! Play again.";
+      } else {
+        const winnerName = result === 'X' ? player1Name : player2Name;
+        statusText.textContent = `${winnerName} wins the game! 🎉`;
+      }
+      statusText.classList.add('winner');
+      cells.forEach(cell => cell.removeEventListener('click', handleClick));
+    }
+
+    function getComputerMove() {
+      let emptyIndexes = board.map((val, i) => val === '' ? i : null).filter(i => i !== null);
+      for (let [a, b, c] of winConditions) {
+        if (board[a] === 'O' && board[b] === 'O' && board[c] === '') return c;
+        if (board[a] === 'O' && board[b] === '' && board[c] === 'O') return b;
+        if (board[a] === '' && board[b] === 'O' && board[c] === 'O') return a;
+      }
+      for (let [a, b, c] of winConditions) {
+        if (board[a] === 'X' && board[b] === 'X' && board[c] === '') return c;
+        if (board[a] === 'X' && board[b] === '' && board[c] === 'X') return b;
+        if (board[a] === '' && board[b] === 'X' && board[c] === 'X') return a;
+      }
+      return emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)];
+    }
+
+    function resetGame() {
+      board = Array(9).fill('');
+      cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('X', 'O');
+        cell.addEventListener('click', handleClick);
+      });
+      currentPlayer = 'X';
+      isGameActive = true;
+      statusText.textContent = `${player1Name}'s turn (X)`;
+      statusText.classList.remove('winner');
+    }
+  </script>
+</body>
+</html>
